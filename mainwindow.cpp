@@ -1,7 +1,12 @@
+#include "sqlite3.h"
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 #include "stock.h"
 #include <QMessageBox>
+#include <QSqlDatabase>
+#include <QDebug>
+
+
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -26,12 +31,11 @@ void MainWindow::on_SearchButton_clicked()
             qDebug () << "Failed to open Database.";
         }
 
-        bool connOpen();//open the connection with database
-
+        bool connOpen();
 
         QSqlQuery qry;
 
-        qry.prepare("select * from tb_product where name = '"+product+"'");
+        qry.prepare("select * from Stock where name = '"+product+"'");
 
         if (qry.exec())
         {
@@ -44,9 +48,13 @@ void MainWindow::on_SearchButton_clicked()
                 {
                     qDebug () << " Product found.";
 
+                    QSqlQuery qry2;
+                    qry2.prepare("insert into Search select id,name,price,quantity from Stock where name = '"+product+"'");
+                    qry2.exec();
+
                     QSqlQueryModel * modal = new QSqlQueryModel ();
                     QSqlQuery * qry3 = new QSqlQuery(db);
-                    qry3->prepare("select * from tb_product where name='"+product+"'");
+                    qry3->prepare("select * from Search");
 
                     qry3->exec();
                     modal->setQuery(*qry3);
@@ -60,8 +68,7 @@ void MainWindow::on_SearchButton_clicked()
                     QMessageBox::critical(this,tr ("Error!"),tr ("Product not found."));
 
          }
-            connClose();//close the connection with database
-
+            connClose();
 
 }
 void MainWindow::getProduct(){
@@ -70,7 +77,7 @@ void MainWindow::getProduct(){
 
 
 void MainWindow::on_stockButton_clicked()
-{   //it opens a new window to add, edit or remove products from tb_product
+{
     Stock stock;
     stock.setModal(true);
     stock.exec();
@@ -78,27 +85,16 @@ void MainWindow::on_stockButton_clicked()
 
 void MainWindow::on_addButton_clicked()
 {
-    connOpen();//open the connection with database
-
+    connOpen();
 
         QString product;
         product = ui->searchWidget->text();
 
-        QSqlQuery qry3;
-        qry3.prepare("insert into tb_product_cart (product_fk) select id from tb_product where name='"+product+"'");
-        if(qry3.exec())
-        {   qDebug () <<"done1";}
-
-        QSqlQuery qry1;
-        qry1.prepare("select)");
-        if(qry1.exec())
-        {   qDebug () <<"done41";}
-
         QSqlQuery qry4;
-        qry4.prepare("update tb_product_cart set quant = quant +1 order by id desc limit 1");
+        qry4.prepare("select * from Stock where name = '"+product+"'");
 
         if(qry4.exec())
-        {   qDebug () <<"done";
+        {
             int count = 0;
             while (qry4.next())
                 {
@@ -108,26 +104,37 @@ void MainWindow::on_addButton_clicked()
             {
 
                 QSqlQuery qry5;
-                qry5.prepare("select * from tb_product_cart order by id desc limit 1");
+                qry5.prepare("insert into Cart (id,name,price) select id,name,price from Stock where name = '"+product+"'");
                 qry5.exec();
+
+
+                QSqlQuery qry6;
+                qry6.prepare("update Cart set quantity = quantity +1 where name = '"+product+"'");
+                qry6.exec();
+
 
                 QSqlQueryModel * modal = new QSqlQueryModel ();
                 QSqlQuery * qry7 = new QSqlQuery(db);
-                qry7->prepare("select * from tb_product_cart");
+                qry7->prepare("select * from Cart");
 
                 qry7->exec();
                 modal->setQuery(*qry7);
                 ui->orderTable->setModel(modal);
 
-                connClose();//close the connection with database
-             }
+                QSqlQuery qry8;
+                qry8.prepare("Delete from Search");
+                qry8.exec();
+
+            }
+
         }
+
+        connClose();
 }
 
-
-/*void MainWindow::on_removeButton_clicked()
+void MainWindow::on_removeButton_clicked()
 {
-        connOpen();
+    connOpen();
 
         QString product;
         product = ui->searchWidget->text();
@@ -194,7 +201,7 @@ void MainWindow::on_cancelButton_clicked()
     connClose();
 }
 
-/*void MainWindow::on_finshButton_clicked()
+void MainWindow::on_finshButton_clicked()
 {
     connOpen();
 
@@ -212,7 +219,7 @@ void MainWindow::on_cancelButton_clicked()
     /* QSqlQuery qry17;
     qry17.prepare("update Stock set quantity = (select quantity from Stock where id = (select id from Sold)) - (select quantity from Sold where id = (select id from Stock)) where id = (select id from Cart)");
     if(qry17.exec())
-    { qDebug () << "done3";}*
+    { qDebug () << "done3";}*/
 
     QSqlQuery qry18;
     qry18.prepare("Delete from Cart");
@@ -233,10 +240,158 @@ void MainWindow::on_cancelButton_clicked()
     connClose();
 }
 
-void MainWindow::on_valueView_activated(const QModelIndex &index)
+void MainWindow::on_create_db_button_clicked()
 {
-    QSqlQuery qry;
-    qry.prepare("select from ")
+   qDebug() << "on_create_db_button_clicked";
+
+   sqlite3 *db;
+   char *zErrMsg = 0;
+   const char *dbName = DATABASE;
+
+   int rc = sqlite3_open(dbName, &db);
+
+   if (rc) {
+       qDebug() << "Can't open database: " << sqlite3_errmsg(db) << endl;
+       sqlite3_close(db);
+       return;
+   }
+
+   const char *commands[] = {
+       "create table tb_product(id integer primary key autoincrement, name text, price real)"
+       , "create table tb_cart(id integer primary key autoincrement, creation datetime)"
+       , "create table tb_product_cart(id integer primary key autoincrement, product_fk integer, cart_fk integer, quant integer)"
+   };
+   int size = sizeof (commands) / sizeof (const char *);
+
+   for (int i = 0; i < size; i++) {
+//        rc = sqlite3_exec(db, commands[i], myCallback, 0, &zErrMsg);
+       rc = sqlite3_exec(db, commands[i], 0, 0, &zErrMsg);
+       if (rc != SQLITE_OK) {
+           qDebug() << "SQL error: " << zErrMsg << endl;
+           sqlite3_free(zErrMsg);
+       }
+   }
+
+   sqlite3_close(db);
+
+}
+
+// static
+void processDB(sqlite3 *db, const char **commands, int size) {
+    qDebug() << "== processDB()" << endl;
+    char *zErrMsg = 0;
+        for (int i = 0; i < size; i++) {
+        int rc = sqlite3_exec(db, commands[i], 0, 0, &zErrMsg);
+        if (rc != SQLITE_OK) {
+            qDebug() << "SQL error: " << zErrMsg << endl;
+            sqlite3_free(zErrMsg);
+        }
+    }
+    sqlite3_close(db);
+}
+
+// static
+int myCallback(void *NotUsed, int argc, char **argv, char **azColName) {
+    for (int i = 0; i < argc; i++) {
+        const char *arg = argv[i] ? argv[i] : "NULL";
+        qDebug() << azColName[i] << " = " << arg << " ; ";
+    }
+    qDebug() << endl;
+    return 0;
+}
 
 
-}*/
+void MainWindow::on_insert_product_clicked()
+{
+    qDebug() << "on_insert_product_clicked";
+    sqlite3 *db;
+    const char *dbName = DATABASE;
+    int rc = sqlite3_open(dbName, &db);
+    if (rc) {
+        qDebug() << "Can't open database: " << sqlite3_errmsg(db) << endl;
+        sqlite3_close(db);
+        return;
+    }
+
+    const char *commands[] = {
+        "insert into tb_product (name, price) values (\"product name\",1.25)"
+    };
+    int size = sizeof (commands) / sizeof (const char *);
+    processDB(db, commands, size);
+
+}
+
+void MainWindow::on_create_cart_clicked()
+{
+    qDebug () << "on_create_cart_clicked";
+    qDebug() << "on_insert_product_clicked";
+    sqlite3 *db;
+    const char *dbName = DATABASE;
+    int rc = sqlite3_open(dbName, &db);
+    if (rc) {
+        qDebug() << "Can't open database: " << sqlite3_errmsg(db) << endl;
+        sqlite3_close(db);
+        return;
+    }
+
+    const char *commands[] = {
+        "insert into tb_cart (creation) values (datetime('now','localtime'))"
+    };
+    int size = sizeof (commands) / sizeof (const char *);
+    processDB(db, commands, size);
+
+}
+
+void MainWindow::on_product_to_cart_clicked()
+{
+    qDebug () << "on_product_to_cart_clicked";
+    sqlite3 *db;
+    const char *dbName = DATABASE;
+    int rc = sqlite3_open(dbName, &db);
+    if (rc) {
+        qDebug() << "Can't open database: " << sqlite3_errmsg(db) << endl;
+        sqlite3_close(db);
+        return;
+    }
+
+    const char *commands[] = {
+        "insert into tb_product_cart (product_fk, cart_fk, quant) values (1,5,3)"
+    };
+    int size = sizeof (commands) / sizeof (const char *);
+    processDB(db, commands, size);
+
+}
+
+void MainWindow::on_list_all_clicked()
+{
+    qDebug () << "on_list_all_clicked";
+
+    sqlite3 *db;
+    const char *dbName = DATABASE;
+    int rc = sqlite3_open(dbName, &db);
+    if (rc) {
+        qDebug () << "Can't open database: " << sqlite3_errmsg(db) << endl;
+        sqlite3_close(db);
+        return;
+    }
+
+    const char *commands[] = {
+        "select * from tb_product"
+        , "select * from tb_cart"
+        , "select * from tb_product_cart"
+    };
+    int size = sizeof (commands) / sizeof (const char *);
+
+    char *zErrMsg = 0;
+    for (int i = 0; i < size; i++) {
+        int rc = sqlite3_exec(db, commands[i], myCallback, 0, &zErrMsg);
+        if (rc != SQLITE_OK) {
+            qDebug () << "SQL error: " << zErrMsg << endl;
+            sqlite3_free(zErrMsg);
+        }
+    }
+
+    sqlite3_close(db);
+}
+
+

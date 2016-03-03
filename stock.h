@@ -5,6 +5,11 @@
 #include <QDialog>
 #include "mainwindow.h"
 
+#define DATABASE "../QtRetail/database/QtRetail.db"
+//#define DATABASE_NAME "QtRetail"
+// #define DATA_FOLDER "./database/"
+
+
 namespace Ui {
 class Stock;
 }

@@ -15,12 +15,17 @@ TEMPLATE = app
 SOURCES += main.cpp\
         mainwindow.cpp \
     stock.cpp \
-    main.cpp
+    main.cpp \
+    sqlite3.c
 
 HEADERS  += mainwindow.h \
-    stock.h
+    stock.h \
+    sqlite3.h
 
 
 FORMS    += mainwindow.ui \
     stock.ui
+
+LIBS += -lpthread
+LIBS += -ldl
 

@@ -22,7 +22,7 @@ public:
     bool connOpen()
     {
         db = QSqlDatabase::addDatabase("QSQLITE");
-        db.setDatabaseName("C:/Users/Rodrigo/Desktop/QTRetail-master/database/QtRetail.db");
+        db.setDatabaseName("/home/rodrigonunes47/QTRetail.db");
 
         if (!db.open()){
             qDebug () << "failed";
@@ -52,7 +52,15 @@ private slots:
 
     void on_finshButton_clicked();
 
-    void on_valueView_activated(const QModelIndex &index);
+    void on_create_db_button_clicked();
+
+    void on_insert_product_clicked();
+
+    void on_create_cart_clicked();
+
+    void on_product_to_cart_clicked();
+
+    void on_list_all_clicked();
 
 private:
     Ui::MainWindow *ui;
