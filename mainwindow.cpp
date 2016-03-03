@@ -26,11 +26,12 @@ void MainWindow::on_SearchButton_clicked()
             qDebug () << "Failed to open Database.";
         }
 
-        bool connOpen();
+        bool connOpen();//open the connection with database
+
 
         QSqlQuery qry;
 
-        qry.prepare("select * from Stock where name = '"+product+"'");
+        qry.prepare("select * from tb_product where name = '"+product+"'");
 
         if (qry.exec())
         {
@@ -43,13 +44,9 @@ void MainWindow::on_SearchButton_clicked()
                 {
                     qDebug () << " Product found.";
 
-                    QSqlQuery qry2;
-                    qry2.prepare("insert into Search select id,name,price,quantity from Stock where name = '"+product+"'");
-                    qry2.exec();
-
                     QSqlQueryModel * modal = new QSqlQueryModel ();
                     QSqlQuery * qry3 = new QSqlQuery(db);
-                    qry3->prepare("select * from Search");
+                    qry3->prepare("select * from tb_product where name='"+product+"'");
 
                     qry3->exec();
                     modal->setQuery(*qry3);
@@ -63,7 +60,8 @@ void MainWindow::on_SearchButton_clicked()
                     QMessageBox::critical(this,tr ("Error!"),tr ("Product not found."));
 
          }
-            connClose();
+            connClose();//close the connection with database
+
 
 }
 void MainWindow::getProduct(){
@@ -72,7 +70,7 @@ void MainWindow::getProduct(){
 
 
 void MainWindow::on_stockButton_clicked()
-{
+{   //it opens a new window to add, edit or remove products from tb_product
     Stock stock;
     stock.setModal(true);
     stock.exec();
@@ -80,16 +78,27 @@ void MainWindow::on_stockButton_clicked()
 
 void MainWindow::on_addButton_clicked()
 {
-    connOpen();
+    connOpen();//open the connection with database
+
 
         QString product;
         product = ui->searchWidget->text();
 
+        QSqlQuery qry3;
+        qry3.prepare("insert into tb_product_cart (product_fk) select id from tb_product where name='"+product+"'");
+        if(qry3.exec())
+        {   qDebug () <<"done1";}
+
+        QSqlQuery qry1;
+        qry1.prepare("select)");
+        if(qry1.exec())
+        {   qDebug () <<"done41";}
+
         QSqlQuery qry4;
-        qry4.prepare("select * from Stock where name = '"+product+"'");
+        qry4.prepare("update tb_product_cart set quant = quant +1 order by id desc limit 1");
 
         if(qry4.exec())
-        {
+        {   qDebug () <<"done";
             int count = 0;
             while (qry4.next())
                 {
@@ -99,37 +108,26 @@ void MainWindow::on_addButton_clicked()
             {
 
                 QSqlQuery qry5;
-                qry5.prepare("insert into Cart (id,name,price) select id,name,price from Stock where name = '"+product+"'");
+                qry5.prepare("select * from tb_product_cart order by id desc limit 1");
                 qry5.exec();
-
-
-                QSqlQuery qry6;
-                qry6.prepare("update Cart set quantity = quantity +1 where name = '"+product+"'");
-                qry6.exec();
-
 
                 QSqlQueryModel * modal = new QSqlQueryModel ();
                 QSqlQuery * qry7 = new QSqlQuery(db);
-                qry7->prepare("select * from Cart");
+                qry7->prepare("select * from tb_product_cart");
 
                 qry7->exec();
                 modal->setQuery(*qry7);
                 ui->orderTable->setModel(modal);
 
-                QSqlQuery qry8;
-                qry8.prepare("Delete from Search");
-                qry8.exec();
-
-            }
-
+                connClose();//close the connection with database
+             }
         }
-
-        connClose();
 }
 
-void MainWindow::on_removeButton_clicked()
+
+/*void MainWindow::on_removeButton_clicked()
 {
-    connOpen();
+        connOpen();
 
         QString product;
         product = ui->searchWidget->text();
@@ -196,7 +194,7 @@ void MainWindow::on_cancelButton_clicked()
     connClose();
 }
 
-void MainWindow::on_finshButton_clicked()
+/*void MainWindow::on_finshButton_clicked()
 {
     connOpen();
 
@@ -214,7 +212,7 @@ void MainWindow::on_finshButton_clicked()
     /* QSqlQuery qry17;
     qry17.prepare("update Stock set quantity = (select quantity from Stock where id = (select id from Sold)) - (select quantity from Sold where id = (select id from Stock)) where id = (select id from Cart)");
     if(qry17.exec())
-    { qDebug () << "done3";}*/
+    { qDebug () << "done3";}*
 
     QSqlQuery qry18;
     qry18.prepare("Delete from Cart");
@@ -234,3 +232,11 @@ void MainWindow::on_finshButton_clicked()
 
     connClose();
 }
+
+void MainWindow::on_valueView_activated(const QModelIndex &index)
+{
+    QSqlQuery qry;
+    qry.prepare("select from ")
+
+
+}*/

@@ -19,5 +19,7 @@ SOURCES += main.cpp\
 HEADERS  += mainwindow.h \
     stock.h
 
+
 FORMS    += mainwindow.ui \
     stock.ui
+
